@@ -35,40 +35,16 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Build GeoJSON
-geojson = {
-    "type": "FeatureCollection",
-    "features": []
-}
-
-for _, row in merged.iterrows():
-    geojson["features"].append({
-        "type": "Feature",
-        "geometry": row["geometry"],
-        "properties": {
-            "tract_id": row["tract_id"],
-            "population": row["population"],
-            "nhpi": row["nhpi"],
-            "asian": row["asian"],
-            "white": row["white"],
-            "resource_count": row["resource_count"],
-            "transit_count": row["transit_count"],
-            "unemployment_rate": row["unemployment_rate"],
-            "need_score": row["need_score"]
-        }
-    })
-
 # Map
-fig_map = px.choropleth_map(
+fig_map = px.choropleth_mapbox(
     merged,
-    geojson=geojson,
+    geojson=merged.set_index("tract_id")["geometry"].__geo_interface__,
     locations="tract_id",
-    featureidkey="properties.tract_id",
     color=indicator,
-    color_continuous_scale="YlOrRd",  # stronger colors
+    mapbox_style="carto-positron",
     center={"lat": 21.4389, "lon": -157.9993},
     zoom=10,
-    opacity=0.9,  # stronger shading
+    opacity=0.9,
     hover_name="tract_id",
     hover_data={
         "population": True,
@@ -83,7 +59,6 @@ fig_map = px.choropleth_map(
 )
 
 fig_map.update_traces(marker_line_width=0.5, marker_line_color="black")
-
 
 # Add OSM layers (multiple layers with different colors)
 if layers:
