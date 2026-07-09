@@ -1,14 +1,19 @@
 import streamlit as st
 import pandas as pd
-import geopandas as gpd
 import plotly.express as px
 from shapely.geometry import mapping
 
-# Load your data
+# Load data
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
-st.set_page_config(layout="wide", page_title="Honolulu Community Development Dashboard")
+# Convert Shapely geometry to JSON-safe dicts
+merged["geometry"] = merged["geometry"].apply(lambda g: mapping(g))
+
+st.set_page_config(
+    layout="wide",
+    page_title="Honolulu Community Development Dashboard"
+)
 
 st.title("Honolulu Community Development Dashboard")
 
@@ -39,8 +44,18 @@ geojson = {
 for _, row in merged.iterrows():
     geojson["features"].append({
         "type": "Feature",
-        "geometry": mapping(row["geometry"]),
-        "properties": row.to_dict()
+        "geometry": row["geometry"],
+        "properties": {
+            "tract_id": row["tract_id"],
+            "population": row["population"],
+            "nhpi": row["nhpi"],
+            "asian": row["asian"],
+            "white": row["white"],
+            "resource_count": row["resource_count"],
+            "transit_count": row["transit_count"],
+            "unemployment_rate": row["unemployment_rate"],
+            "need_score": row["need_score"]
+        }
     })
 
 # Map
