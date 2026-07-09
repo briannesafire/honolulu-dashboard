@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from shapely.geometry import mapping
+from shapely.geometry import shape, mapping
 
 # Load data
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
-# Convert Shapely geometry to JSON-safe dicts
-merged["geometry"] = merged["geometry"].apply(lambda g: mapping(g))
+# Convert Shapely geometry dicts into proper GeoJSON geometry
+merged["geometry"] = merged["geometry"].apply(lambda g: mapping(shape(g)))
 
 st.set_page_config(
     layout="wide",
@@ -44,7 +44,7 @@ geojson = {
 for _, row in merged.iterrows():
     geojson["features"].append({
         "type": "Feature",
-        "geometry": row["geometry"],
+        "geometry": row["geometry"],  # now fully valid GeoJSON
         "properties": {
             "tract_id": row["tract_id"]
         }
