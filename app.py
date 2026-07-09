@@ -35,12 +35,29 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Map
+# Build GeoJSON correctly for Plotly
+geojson = {
+    "type": "FeatureCollection",
+    "features": []
+}
+
+for _, row in merged.iterrows():
+    geojson["features"].append({
+        "type": "Feature",
+        "geometry": row["geometry"],  # mapping() output is valid
+        "properties": {
+            "tract_id": row["tract_id"]
+        }
+    })
+
+# Map (choropleth now works)
 fig_map = px.choropleth_mapbox(
     merged,
-    geojson=merged.set_index("tract_id")["geometry"].__geo_interface__,
+    geojson=geojson,
     locations="tract_id",
+    featureidkey="properties.tract_id",
     color=indicator,
+    color_continuous_scale="YlOrRd",   # stronger unemployment colors
     mapbox_style="carto-positron",
     center={"lat": 21.4389, "lon": -157.9993},
     zoom=10,
@@ -82,7 +99,6 @@ if layers:
             name=layer
         )
 
-
 st.plotly_chart(fig_map, width="stretch")
 
 # Bar chart
@@ -98,4 +114,3 @@ st.plotly_chart(fig_bar, width="stretch")
 # Underlying data viewer
 st.subheader("Underlying Data")
 st.dataframe(merged.drop(columns=["geometry"]))
-
