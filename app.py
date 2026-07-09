@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape
 
 # Load data
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
-# Convert Shapely geometry dicts into proper GeoJSON geometry
-merged["geometry"] = merged["geometry"].apply(lambda g: mapping(shape(g)))
+# Compute centroids for heatmap dots
+merged["centroid_x"] = merged["geometry"].apply(lambda g: shape(g).centroid.x)
+merged["centroid_y"] = merged["geometry"].apply(lambda g: shape(g).centroid.y)
 
 st.set_page_config(
     layout="wide",
@@ -35,33 +36,17 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Build GeoJSON correctly for Plotly
-geojson = {
-    "type": "FeatureCollection",
-    "features": []
-}
-
-for _, row in merged.iterrows():
-    geojson["features"].append({
-        "type": "Feature",
-        "geometry": row["geometry"],  # now fully valid GeoJSON
-        "properties": {
-            "tract_id": row["tract_id"]
-        }
-    })
-
-# Map (choropleth now works)
-fig_map = px.choropleth_mapbox(
+# Map (heatmap instead of polygons)
+fig_map = px.scatter_mapbox(
     merged,
-    geojson=geojson,
-    locations="tract_id",
-    featureidkey="properties.tract_id",
+    lat="centroid_y",
+    lon="centroid_x",
     color=indicator,
     color_continuous_scale="YlOrRd",
-    mapbox_style="carto-positron",
-    center={"lat": 21.4389, "lon": -157.9993},
+    size=[10] * len(merged),  # uniform dot size
     zoom=10,
-    opacity=0.9,
+    center={"lat": 21.4389, "lon": -157.9993},
+    mapbox_style="carto-positron",
     hover_name="tract_id",
     hover_data={
         "population": True,
@@ -74,8 +59,6 @@ fig_map = px.choropleth_mapbox(
         "need_score": True
     }
 )
-
-fig_map.update_traces(marker_line_width=0.5, marker_line_color="black")
 
 # Add OSM layers (multiple layers with different colors)
 if layers:
