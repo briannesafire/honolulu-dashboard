@@ -84,17 +84,28 @@ fig_map = px.choropleth_map(
 # REQUIRED for scattermapbox layers to appear
 fig_map.update_layout(mapbox_style="carto-positron")
 
-# Add OSM layers
+# Add OSM layers (multiple layers with different colors)
 if layers:
-    filtered_osm = osm_points[osm_points["type"].isin(layers)]
-    fig_map.add_scattermapbox(
-        lat=filtered_osm.geometry.y,
-        lon=filtered_osm.geometry.x,
-        mode="markers",
-        marker=dict(size=6, color="red"),
-        text=filtered_osm["type"],
-        name="OSM Layers"
-    )
+    layer_colors = {
+        "School": "red",
+        "Health": "blue",
+        "Church": "purple",
+        "Community": "green",
+        "Bus Stop": "orange",
+        "Rail Station": "yellow"
+    }
+
+    for layer in layers:
+        subset = osm_points[osm_points["type"] == layer]
+        fig_map.add_scattermapbox(
+            lat=subset.geometry.y,
+            lon=subset.geometry.x,
+            mode="markers",
+            marker=dict(size=6, color=layer_colors.get(layer, "black")),
+            text=subset["type"],
+            name=layer
+        )
+
 
 st.plotly_chart(fig_map, width="stretch")
 
