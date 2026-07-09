@@ -7,6 +7,9 @@ from shapely.geometry import shape
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
+# FIX: Replace NaN unemployment values so gradient works
+merged["unemployment_rate"] = merged["unemployment_rate"].fillna(0)
+
 # Compute centroids for dot placement
 merged["centroid_x"] = merged["geometry"].apply(lambda g: shape(g).centroid.x)
 merged["centroid_y"] = merged["geometry"].apply(lambda g: shape(g).centroid.y)
@@ -41,9 +44,9 @@ fig_map = px.scatter_mapbox(
     merged,
     lat="centroid_y",
     lon="centroid_x",
-    color=indicator,                     # THIS makes dots follow the gradient
-    color_continuous_scale="YlOrRd",     # Gradient colors
-    size=[12] * len(merged),             # Uniform dot size (does NOT affect color)
+    color=indicator,
+    color_continuous_scale="YlOrRd",
+    size=[12] * len(merged),
     opacity=0.85,
     zoom=10,
     center={"lat": 21.4389, "lon": -157.9993},
@@ -61,7 +64,7 @@ fig_map = px.scatter_mapbox(
     }
 )
 
-# Add OSM layers (multiple layers with different colors)
+# Add OSM layers
 if layers:
     layer_colors = {
         "School": "red",
