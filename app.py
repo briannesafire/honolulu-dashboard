@@ -81,6 +81,9 @@ fig_map = px.choropleth_map(
     }
 )
 
+# REQUIRED for scattermapbox layers to appear
+fig_map.update_layout(mapbox_style="carto-positron")
+
 # Add OSM layers
 if layers:
     filtered_osm = osm_points[osm_points["type"].isin(layers)]
