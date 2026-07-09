@@ -7,7 +7,7 @@ from shapely.geometry import shape
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
-# Compute centroids for heatmap dots
+# Compute centroids for dot placement
 merged["centroid_x"] = merged["geometry"].apply(lambda g: shape(g).centroid.x)
 merged["centroid_y"] = merged["geometry"].apply(lambda g: shape(g).centroid.y)
 
@@ -36,16 +36,15 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Base map with centroid dots
+# Map with gradient-colored dots
 fig_map = px.scatter_mapbox(
     merged,
     lat="centroid_y",
     lon="centroid_x",
-    color=indicator,
-    color_continuous_scale="YlOrRd",
-    size=merged[indicator].fillna(1),
-    size_max=25,
-    opacity=0.8,
+    color=indicator,                     # THIS makes dots follow the gradient
+    color_continuous_scale="YlOrRd",     # Gradient colors
+    size=[12] * len(merged),             # Uniform dot size (does NOT affect color)
+    opacity=0.85,
     zoom=10,
     center={"lat": 21.4389, "lon": -157.9993},
     mapbox_style="carto-positron",
@@ -60,17 +59,6 @@ fig_map = px.scatter_mapbox(
         "unemployment_rate": True,
         "need_score": True
     }
-)
-
-# Add unemployment heatmap gradient
-fig_map.add_densitymapbox(
-    lat=merged["centroid_y"],
-    lon=merged["centroid_x"],
-    z=merged[indicator].fillna(0),
-    radius=40,
-    colorscale="YlOrRd",
-    opacity=0.5,
-    name="Unemployment Heatmap"
 )
 
 # Add OSM layers (multiple layers with different colors)
