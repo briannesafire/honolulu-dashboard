@@ -44,7 +44,7 @@ geojson = {
 for _, row in merged.iterrows():
     geojson["features"].append({
         "type": "Feature",
-        "geometry": row["geometry"],  # mapping() output is valid
+        "geometry": row["geometry"],
         "properties": {
             "tract_id": row["tract_id"]
         }
@@ -57,7 +57,7 @@ fig_map = px.choropleth_mapbox(
     locations="tract_id",
     featureidkey="properties.tract_id",
     color=indicator,
-    color_continuous_scale="YlOrRd",   # stronger unemployment colors
+    color_continuous_scale="YlOrRd",
     mapbox_style="carto-positron",
     center={"lat": 21.4389, "lon": -157.9993},
     zoom=10,
