@@ -107,4 +107,5 @@ st.plotly_chart(fig_bar, width="stretch")
 
 # Underlying data viewer
 st.subheader("Underlying Data")
-st.dataframe(merged)
+st.dataframe(merged.drop(columns=["geometry"]))
+
