@@ -65,9 +65,10 @@ fig_map = px.choropleth_map(
     locations="tract_id",
     featureidkey="properties.tract_id",
     color=indicator,
+    color_continuous_scale="YlOrRd",  # stronger colors
     center={"lat": 21.4389, "lon": -157.9993},
     zoom=10,
-    opacity=0.7,
+    opacity=0.9,  # stronger shading
     hover_name="tract_id",
     hover_data={
         "population": True,
@@ -81,8 +82,8 @@ fig_map = px.choropleth_map(
     }
 )
 
-# REQUIRED for scattermapbox layers to appear
-fig_map.update_layout(mapbox_style="carto-positron")
+fig_map.update_traces(marker_line_width=0.5, marker_line_color="black")
+
 
 # Add OSM layers (multiple layers with different colors)
 if layers:
