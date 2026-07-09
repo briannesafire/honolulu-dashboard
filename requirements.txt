@@ -1,3 +1,6 @@
-dash
-plotly
+streamlit
 pandas
+geopandas
+plotly
+shapely
+osmnx
