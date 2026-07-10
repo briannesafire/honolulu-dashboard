@@ -70,8 +70,8 @@ if layers:
         "Health": "blue",
         "Church": "purple",
         "Community": "green",
-        "Bus Stop": "orange",
-        "Rail Station": "yellow"
+        "Bus Stop": "magenta",
+        "Rail Station": "teal"
     }
 
     for layer in layers:
