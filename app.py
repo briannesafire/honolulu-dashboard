@@ -85,7 +85,7 @@ if layers:
         "Health": "blue",
         "Church": "purple",
         "Community": "green",
-        "Bus Stop": "cyan",        # changed to avoid clashing with unemployment orange
+        "Bus Stop": "cyan",
         "Rail Station": "yellow"
     }
 
@@ -116,23 +116,21 @@ fig_bar.update_layout(yaxis_title=indicator.replace('_', ' ').title())
 
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# Chart 1: Unemployment vs resource access
+# Chart 1: Unemployment vs resource access (no trendline)
 fig_scatter_resources = px.scatter(
     merged,
     x="resource_count",
     y="unemployment_rate",
-    trendline="ols",
     title="Unemployment vs Community Resource Access",
     labels={"resource_count": "Nearby Services"}
 )
 st.plotly_chart(fig_scatter_resources, use_container_width=True)
 
-# Chart 2: Unemployment vs transit access
+# Chart 2: Unemployment vs transit access (no trendline)
 fig_scatter_transit = px.scatter(
     merged,
     x="transit_count",
     y="unemployment_rate",
-    trendline="ols",
     title="Unemployment vs Transit Access",
     labels={"transit_count": "Transit Stops (Bus + Rail)"}
 )
