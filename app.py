@@ -1,18 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from shapely.geometry import shape
+from shapely.geometry import mapping
 
 # Load data
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
 
-# FIX: Replace NaN unemployment values so gradient works
-merged["unemployment_rate"] = merged["unemployment_rate"].fillna(0)
-
-# Compute centroids for dot placement
-merged["centroid_x"] = merged["geometry"].apply(lambda g: shape(g).centroid.x)
-merged["centroid_y"] = merged["geometry"].apply(lambda g: shape(g).centroid.y)
+# Convert Shapely geometry to JSON-safe dicts
+merged["geometry"] = merged["geometry"].apply(lambda g: mapping(g))
 
 st.set_page_config(
     layout="wide",
@@ -39,18 +35,39 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Map with gradient-colored dots
-fig_map = px.scatter_mapbox(
+# Build GeoJSON
+geojson = {
+    "type": "FeatureCollection",
+    "features": []
+}
+
+for _, row in merged.iterrows():
+    geojson["features"].append({
+        "type": "Feature",
+        "geometry": row["geometry"],
+        "properties": {
+            "tract_id": row["tract_id"],
+            "population": row["population"],
+            "nhpi": row["nhpi"],
+            "asian": row["asian"],
+            "white": row["white"],
+            "resource_count": row["resource_count"],
+            "transit_count": row["transit_count"],
+            "unemployment_rate": row["unemployment_rate"],
+            "need_score": row["need_score"]
+        }
+    })
+
+# Map
+fig_map = px.choropleth_map(
     merged,
-    lat="centroid_y",
-    lon="centroid_x",
+    geojson=geojson,
+    locations="tract_id",
+    featureidkey="properties.tract_id",
     color=indicator,
-    color_continuous_scale="YlOrRd",
-    size=[12] * len(merged),
-    opacity=0.85,
-    zoom=10,
     center={"lat": 21.4389, "lon": -157.9993},
-    mapbox_style="carto-positron",
+    zoom=10,
+    opacity=0.7,
     hover_name="tract_id",
     hover_data={
         "population": True,
@@ -64,7 +81,10 @@ fig_map = px.scatter_mapbox(
     }
 )
 
-# Add OSM layers
+# REQUIRED for scattermapbox layers to appear
+fig_map.update_layout(mapbox_style="carto-positron")
+
+# Add OSM layers (multiple layers with different colors)
 if layers:
     layer_colors = {
         "School": "red",
@@ -85,6 +105,7 @@ if layers:
             text=subset["type"],
             name=layer
         )
+
 
 st.plotly_chart(fig_map, width="stretch")
 
