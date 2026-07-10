@@ -60,10 +60,10 @@ fig_map = px.scatter_mapbox(
     }
 )
 
-# Make sure unemployment dots stay underneath
-fig_map.update_traces(layer="below")
+# Push unemployment dots BELOW all other layers
+fig_map.update_traces(below="")
 
-# Add OSM layers on top
+# Add OSM layers (these will naturally sit on top)
 if layers:
     layer_colors = {
         "School": "red",
@@ -82,8 +82,7 @@ if layers:
             mode="markers",
             marker=dict(size=6, color=layer_colors.get(layer, "black")),
             text=subset["type"],
-            name=layer,
-            layer="above"   # keeps OSM markers on top
+            name=layer
         )
 
 st.plotly_chart(fig_map, use_container_width=True)
