@@ -31,6 +31,9 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
+# Add readable neighborhood names
+merged["neighborhood"] = merged["NAMELSAD"]
+
 # Compute centroids for dot placement
 merged["centroid_x"] = merged["geometry"].centroid.x
 merged["centroid_y"] = merged["geometry"].centroid.y
@@ -60,18 +63,30 @@ fig_map = px.scatter_mapbox(
     }
 )
 
-# Push unemployment dots BELOW all other layers
+# Push unemployment dots below OSM layers
 fig_map.update_traces(below="")
 
-# Add OSM layers (these will naturally sit on top)
+# Legend fix so it doesn't overlap
+fig_map.update_layout(
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=0.01,
+        xanchor="left",
+        x=0.01,
+        bgcolor="rgba(255,255,255,0.7)"
+    )
+)
+
+# OSM layers (these stay on top)
 if layers:
     layer_colors = {
         "School": "red",
         "Health": "blue",
         "Church": "purple",
         "Community": "green",
-        "Bus Stop": "magenta",
-        "Rail Station": "teal"
+        "Bus Stop": "cyan",        # changed to avoid clashing with unemployment orange
+        "Rail Station": "yellow"
     }
 
     for layer in layers:
@@ -87,16 +102,62 @@ if layers:
 
 st.plotly_chart(fig_map, use_container_width=True)
 
-# Bar chart
+# Better bar chart (neighborhood names instead of tract IDs)
 fig_bar = px.bar(
     merged.sort_values(indicator, ascending=False).head(10),
-    x="tract_id",
+    x="neighborhood",
     y=indicator,
-    title=f"Top 10 Tracts by {indicator.replace('_', ' ').title()}"
+    title=f"Top 10 Neighborhoods by {indicator.replace('_', ' ').title()}",
+    text=indicator
 )
+
+fig_bar.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+fig_bar.update_layout(yaxis_title=indicator.replace('_', ' ').title())
 
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# Underlying data viewer
+# Chart 1: Unemployment vs resource access
+fig_scatter_resources = px.scatter(
+    merged,
+    x="resource_count",
+    y="unemployment_rate",
+    trendline="ols",
+    title="Unemployment vs Community Resource Access",
+    labels={"resource_count": "Nearby Services"}
+)
+st.plotly_chart(fig_scatter_resources, use_container_width=True)
+
+# Chart 2: Unemployment vs transit access
+fig_scatter_transit = px.scatter(
+    merged,
+    x="transit_count",
+    y="unemployment_rate",
+    trendline="ols",
+    title="Unemployment vs Transit Access",
+    labels={"transit_count": "Transit Stops (Bus + Rail)"}
+)
+st.plotly_chart(fig_scatter_transit, use_container_width=True)
+
+# Chart 3: Line graph of unemployment by neighborhood
+fig_line = px.line(
+    merged.sort_values("unemployment_rate"),
+    x="neighborhood",
+    y="unemployment_rate",
+    title="Unemployment Rate by Neighborhood"
+)
+fig_line.update_layout(xaxis_tickangle=45)
+st.plotly_chart(fig_line, use_container_width=True)
+
+# Underlying data (cleaned to only show relevant fields)
 st.subheader("Underlying Data")
-st.dataframe(merged.drop(columns=["geometry"]))
+st.dataframe(
+    merged[[
+        "neighborhood",
+        "population",
+        "unemployment_rate",
+        "median_income",
+        "resource_count",
+        "transit_count",
+        "need_score"
+    ]]
+)
