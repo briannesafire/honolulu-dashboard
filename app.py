@@ -1,14 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from shapely.geometry import mapping
 
 # Load data
 merged = pd.read_pickle("merged.pkl")
 osm_points = pd.read_pickle("osm_points.pkl")
-
-# Convert Shapely geometry to JSON-safe dicts
-merged["geometry"] = merged["geometry"].apply(lambda g: mapping(g))
 
 st.set_page_config(
     layout="wide",
@@ -35,39 +31,22 @@ layers = st.sidebar.multiselect(
     ["School", "Health", "Church", "Community", "Bus Stop", "Rail Station"]
 )
 
-# Build GeoJSON
-geojson = {
-    "type": "FeatureCollection",
-    "features": []
-}
+# Compute centroids for dot placement
+merged["centroid_x"] = merged["geometry"].centroid.x
+merged["centroid_y"] = merged["geometry"].centroid.y
 
-for _, row in merged.iterrows():
-    geojson["features"].append({
-        "type": "Feature",
-        "geometry": row["geometry"],
-        "properties": {
-            "tract_id": row["tract_id"],
-            "population": row["population"],
-            "nhpi": row["nhpi"],
-            "asian": row["asian"],
-            "white": row["white"],
-            "resource_count": row["resource_count"],
-            "transit_count": row["transit_count"],
-            "unemployment_rate": row["unemployment_rate"],
-            "need_score": row["need_score"]
-        }
-    })
-
-# Map
-fig_map = px.choropleth_map(
+# Base map with unemployment dots
+fig_map = px.scatter_mapbox(
     merged,
-    geojson=geojson,
-    locations="tract_id",
-    featureidkey="properties.tract_id",
+    lat="centroid_y",
+    lon="centroid_x",
     color=indicator,
-    center={"lat": 21.4389, "lon": -157.9993},
+    color_continuous_scale="YlOrRd",
+    size=[12] * len(merged),
+    opacity=0.85,
     zoom=10,
-    opacity=0.7,
+    center={"lat": 21.4389, "lon": -157.9993},
+    mapbox_style="carto-positron",
     hover_name="tract_id",
     hover_data={
         "population": True,
@@ -81,10 +60,10 @@ fig_map = px.choropleth_map(
     }
 )
 
-# REQUIRED for scattermapbox layers to appear
-fig_map.update_layout(mapbox_style="carto-positron")
+# Make sure unemployment dots stay underneath
+fig_map.update_traces(layer="below")
 
-# Add OSM layers (multiple layers with different colors)
+# Add OSM layers on top
 if layers:
     layer_colors = {
         "School": "red",
@@ -103,11 +82,11 @@ if layers:
             mode="markers",
             marker=dict(size=6, color=layer_colors.get(layer, "black")),
             text=subset["type"],
-            name=layer
+            name=layer,
+            layer="above"   # keeps OSM markers on top
         )
 
-
-st.plotly_chart(fig_map, width="stretch")
+st.plotly_chart(fig_map, use_container_width=True)
 
 # Bar chart
 fig_bar = px.bar(
@@ -117,7 +96,7 @@ fig_bar = px.bar(
     title=f"Top 10 Tracts by {indicator.replace('_', ' ').title()}"
 )
 
-st.plotly_chart(fig_bar, width="stretch")
+st.plotly_chart(fig_bar, use_container_width=True)
 
 # Underlying data viewer
 st.subheader("Underlying Data")
